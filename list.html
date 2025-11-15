@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>얄롱콘 리스트</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .tag-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .tag-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tag-btn:hover {
+            border-color: #3498db;
+            color: #3498db;
+            transform: translateY(-2px);
+        }
+
+        .tag-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .tag-count {
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-btn.active .tag-count {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .stats {
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 30px;
+        }
+
+        .item {
+            position: relative;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+        }
+
+        .item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            border-color: #3498db;
+        }
+
+        .item img {
+            width: 100%;
+            height: 150px;
+            object-fit: contain;
+            background: #f8f9fa;
+            display: block;
+        }
+
+        .item-info {
+            padding: 10px;
+            background: white;
+        }
+
+        .item-keywords {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .item-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .item-tag {
+            font-size: 10px;
+            padding: 2px 6px;
+            background: #e9ecef;
+            border-radius: 10px;
+            color: #495057;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #28a745;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #6c757d;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .modal-section {
+            margin-bottom: 30px;
+        }
+
+        .modal-section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .modal-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .modal-image {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+        }
+
+        .modal-image:hover {
+            border-color: #3498db;
+            transform: scale(1.05);
+        }
+
+        .modal-image img {
+            width: 100%;
+            height: 120px;
+            object-fit: contain;
+            background: #f8f9fa;
+            display: block;
+        }
+
+        .modal-keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .keyword-btn {
+            padding: 8px 16px;
+            background: #e9ecef;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            color: #495057;
+        }
+
+        .keyword-btn:hover {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .modal-sounds {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .sound-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sound-info {
+            font-size: 12px;
+            color: #6c757d;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .sound-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sound-play-btn {
+            padding: 8px 16px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            min-width: 60px;
+        }
+
+        .sound-play-btn:hover {
+            background: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .sound-play-btn.playing {
+            background: #e74c3c;
+        }
+
+        .sound-play-btn.playing:hover {
+            background: #c0392b;
+        }
+
+        .sound-volume-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .sound-volume-label {
+            font-size: 12px;
+            color: #6c757d;
+            min-width: 40px;
+        }
+
+        .sound-volume-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .sound-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sound-volume-slider::-webkit-slider-thumb:hover {
+            background: #2980b9;
+            transform: scale(1.1);
+        }
+
+        .sound-volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+        }
+
+        .sound-volume-slider::-moz-range-thumb:hover {
+            background: #2980b9;
+            transform: scale(1.1);
+        }
+
+        .sound-audio {
+            display: none;
+        }
+
+        .modal-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .modal-tag {
+            padding: 6px 12px;
+            background: #e3f2fd;
+            border-radius: 15px;
+            font-size: 13px;
+            color: #1976d2;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .item img {
+                height: 120px;
+            }
+
+            .modal-content {
+                max-width: 100%;
+                margin: 10px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>얄롱콘 리스트</h1>
+            <p>이미지를 클릭하면 상세 정보를 볼 수 있습니다</p>
+        </div>
+
+        <div class="controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="키워드로 검색...">
+            <div class="tag-filter" id="tagFilter"></div>
+        </div>
+
+        <div class="stats" id="stats">
+            전체 <span id="totalCount">0</span>개 | 표시 중 <span id="visibleCount">0</span>개
+        </div>
+
+        <div class="loading" id="loading">로딩 중...</div>
+        <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="toast" id="toast">키워드가 복사되었습니다!</div>
+
+    <!-- 모달 -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">상세 정보</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- 동적으로 채워짐 -->
+            </div>
+        </div>
+    </div>
+
+    <script src="lib/dccon_list.js"></script>
+    <script>
+        let allItems = [];
+        let filteredItems = [];
+        let activeTags = new Set();
+        let searchQuery = '';
+
+        // 이미지 경로 처리 함수
+        function getImagePath(name) {
+            if (Array.isArray(name)) {
+                name = name[0];
+            }
+            
+            let path;
+            // 경로가 /로 시작하면 그대로, 아니면 images/dccon/ 추가
+            if (name.startsWith('/')) {
+                path = `images/dccon${name}`;
+            } else {
+                path = `images/dccon/${name}`;
+            }
+            
+            // 경로를 디렉토리와 파일명으로 분리하여 파일명만 인코딩
+            const lastSlash = path.lastIndexOf('/');
+            if (lastSlash !== -1) {
+                const dir = path.substring(0, lastSlash + 1);
+                const filename = path.substring(lastSlash + 1);
+                // 파일명만 URL 인코딩 (한글 등 특수문자 처리)
+                return dir + encodeURIComponent(filename);
+            }
+            return path;
+        }
+
+        // 모든 태그 수집 및 개수 계산
+        function collectAllTags() {
+            const tagCounts = new Map();
+            allItems.forEach(item => {
+                if (item.tags && Array.isArray(item.tags)) {
+                    item.tags.forEach(tag => {
+                        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+                    });
+                }
+            });
+            // 개수 순으로 정렬 (내림차순)
+            return Array.from(tagCounts.entries())
+                .sort((a, b) => b[1] - a[1])
+                .map(([tag, count]) => ({ tag, count }));
+        }
+
+        // 태그 필터 UI 생성
+        function createTagFilter() {
+            const tags = collectAllTags();
+            const container = document.getElementById('tagFilter');
+            container.innerHTML = '';
+
+            tags.forEach(({ tag, count }) => {
+                const btn = document.createElement('button');
+                btn.className = 'tag-btn';
+                btn.innerHTML = `
+                    <span>${tag}</span>
+                    <span class="tag-count">${count}</span>
+                `;
+                btn.addEventListener('click', () => {
+                    if (activeTags.has(tag)) {
+                        activeTags.delete(tag);
+                        btn.classList.remove('active');
+                    } else {
+                        activeTags.add(tag);
+                        btn.classList.add('active');
+                    }
+                    filterItems();
+                });
+                container.appendChild(btn);
+            });
+        }
+
+        // 아이템 필터링
+        function filterItems() {
+            filteredItems = allItems.filter(item => {
+                // 태그 필터
+                if (activeTags.size > 0) {
+                    const itemTags = item.tags || [];
+                    const hasActiveTag = Array.from(activeTags).some(tag => 
+                        itemTags.includes(tag)
+                    );
+                    if (!hasActiveTag) return false;
+                }
+
+                // 검색 필터
+                if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    const keywords = (item.keywords || []).join(' ').toLowerCase();
+                    const tags = (item.tags || []).join(' ').toLowerCase();
+                    if (!keywords.includes(query) && !tags.includes(query)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            renderItems();
+            updateStats();
+        }
+
+        // 아이템 렌더링
+        function renderItems() {
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            if (filteredItems.length === 0) {
+                grid.innerHTML = '<div class="loading">검색 결과가 없습니다.</div>';
+                return;
+            }
+
+            filteredItems.forEach(item => {
+                const name = Array.isArray(item.name) ? item.name[0] : item.name;
+                const imagePath = getImagePath(item.name);
+                const keywords = (item.keywords || []).join(', ');
+                const tags = item.tags || [];
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'item';
+                
+                const img = document.createElement('img');
+                img.src = imagePath;
+                img.alt = name;
+                img.loading = 'lazy';
+                
+                // 이미지 로드 실패 시 플레이스홀더로 변경 (재시도 없음)
+                img.onerror = function() {
+                    this.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E';
+                };
+                
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <div class="item-keywords" title="${keywords}">${keywords || '키워드 없음'}</div>
+                        <div class="item-tags">
+                            ${tags.map(tag => `<span class="item-tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                itemDiv.insertBefore(img, itemDiv.firstChild);
+
+                itemDiv.addEventListener('click', () => {
+                    showModal(item);
+                });
+
+                grid.appendChild(itemDiv);
+            });
+        }
+
+        // 모달 표시
+        function showModal(item) {
+            const modal = document.getElementById('modal');
+            const modalBody = document.getElementById('modalBody');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            const names = Array.isArray(item.name) ? item.name : [item.name];
+            const keywords = item.keywords || [];
+            const tags = item.tags || [];
+            const soundURLs = item.soundURL ? (Array.isArray(item.soundURL) ? item.soundURL : [item.soundURL]) : [];
+
+            modalTitle.textContent = names[0] || '상세 정보';
+
+            let html = '';
+
+            // 이미지 섹션
+            if (names.length > 0) {
+                html += `
+                    <div class="modal-section">
+                        <h3>이미지 (${names.length}개)</h3>
+                        <div class="modal-images">
+                `;
+                names.forEach((name, imgIndex) => {
+                    const imagePath = getImagePath(name);
+                    const imgId = `modal-img-${Date.now()}-${imgIndex}`;
+                    html += `
+                        <div class="modal-image">
+                            <img id="${imgId}" src="${imagePath}" alt="${name}">
+                        </div>
+                    `;
+                });
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 키워드 섹션
+            if (keywords.length > 0) {
+                html += `
+                    <div class="modal-section">
+                        <h3>키워드 (${keywords.length}개)</h3>
+                        <div class="modal-keywords">
+                `;
+                keywords.forEach(keyword => {
+                    html += `
+                        <button class="keyword-btn" data-keyword="${keyword}">${keyword}</button>
+                    `;
+                });
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 태그 섹션
+            if (tags.length > 0) {
+                html += `
+                    <div class="modal-section">
+                        <h3>태그</h3>
+                        <div class="modal-tags">
+                `;
+                tags.forEach(tag => {
+                    html += `<span class="modal-tag">${tag}</span>`;
+                });
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 소리 섹션
+            if (soundURLs.length > 0) {
+                html += `
+                    <div class="modal-section">
+                        <h3>소리 파일 (${soundURLs.length}개)</h3>
+                        <div class="modal-sounds">
+                `;
+                soundURLs.forEach((soundURL, index) => {
+                    const soundId = `sound-${Date.now()}-${index}`;
+                    // 소리 파일 경로 처리 (Sound/로 시작하는 경우 images/dccon/ 추가)
+                    let soundPath = soundURL;
+                    if (!soundURL.startsWith('/') && !soundURL.startsWith('http')) {
+                        soundPath = `images/dccon/${soundURL}`;
+                    } else if (soundURL.startsWith('/')) {
+                        soundPath = `images/dccon${soundURL}`;
+                    }
+                    
+                    // 소리 파일 경로도 URL 인코딩 적용
+                    const lastSlash = soundPath.lastIndexOf('/');
+                    if (lastSlash !== -1) {
+                        const dir = soundPath.substring(0, lastSlash + 1);
+                        const filename = soundPath.substring(lastSlash + 1);
+                        soundPath = dir + encodeURIComponent(filename);
+                    }
+                    html += `
+                        <div class="sound-item">
+                            <div class="sound-info">${soundURL}</div>
+                            <audio class="sound-audio" id="${soundId}" preload="metadata">
+                                <source src="${soundPath}" type="audio/mpeg">
+                                <source src="${soundPath}" type="audio/wav">
+                            </audio>
+                            <div class="sound-controls">
+                                <button class="sound-play-btn" data-sound-id="${soundId}">재생</button>
+                                <div class="sound-volume-control">
+                                    <span class="sound-volume-label">볼륨</span>
+                                    <input type="range" class="sound-volume-slider" min="0" max="100" value="50" data-sound-id="${soundId}">
+                                    <span class="sound-volume-value">50%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            modalBody.innerHTML = html;
+
+            // 모달 이미지 에러 처리 (재시도 없음)
+            modalBody.querySelectorAll('.modal-image img').forEach(img => {
+                img.onerror = function() {
+                    this.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E';
+                };
+            });
+
+            // 키워드 버튼 클릭 이벤트
+            modalBody.querySelectorAll('.keyword-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const keyword = e.target.getAttribute('data-keyword');
+                    copyKeyword(keyword);
+                });
+            });
+
+            // 소리 재생 버튼 이벤트
+            modalBody.querySelectorAll('.sound-play-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const soundId = e.target.getAttribute('data-sound-id');
+                    const audio = document.getElementById(soundId);
+                    const isPlaying = !audio.paused && !audio.ended && audio.readyState > 2;
+                    
+                    if (isPlaying) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                        btn.textContent = '재생';
+                        btn.classList.remove('playing');
+                    } else {
+                        // 다른 오디오 정지
+                        modalBody.querySelectorAll('.sound-audio').forEach(a => {
+                            if (a.id !== soundId) {
+                                a.pause();
+                                a.currentTime = 0;
+                            }
+                        });
+                        modalBody.querySelectorAll('.sound-play-btn').forEach(b => {
+                            if (b.getAttribute('data-sound-id') !== soundId) {
+                                b.textContent = '재생';
+                                b.classList.remove('playing');
+                            }
+                        });
+                        
+                        try {
+                            await audio.play();
+                            btn.textContent = '정지';
+                            btn.classList.add('playing');
+                        } catch (err) {
+                            console.error('재생 실패:', err);
+                            showToast('소리 재생에 실패했습니다.');
+                        }
+                    }
+                });
+            });
+
+            // 오디오 재생 종료 이벤트
+            modalBody.querySelectorAll('.sound-audio').forEach(audio => {
+                audio.addEventListener('ended', () => {
+                    const btn = modalBody.querySelector(`[data-sound-id="${audio.id}"]`);
+                    if (btn) {
+                        btn.textContent = '재생';
+                        btn.classList.remove('playing');
+                    }
+                });
+            });
+
+            // 볼륨 슬라이더 이벤트
+            modalBody.querySelectorAll('.sound-volume-slider').forEach(slider => {
+                const soundId = slider.getAttribute('data-sound-id');
+                const audio = document.getElementById(soundId);
+                const valueLabel = slider.parentElement.querySelector('.sound-volume-value');
+                
+                // 초기 볼륨 설정
+                audio.volume = slider.value / 100;
+                
+                slider.addEventListener('input', (e) => {
+                    const volume = e.target.value / 100;
+                    audio.volume = volume;
+                    valueLabel.textContent = Math.round(volume * 100) + '%';
+                });
+            });
+
+            modal.classList.add('show');
+        }
+
+        // 모달 닫기
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            const modalBody = document.getElementById('modalBody');
+            
+            // 모달이 닫힐 때 모든 오디오 정지
+            if (modalBody) {
+                modalBody.querySelectorAll('.sound-audio').forEach(audio => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                });
+                modalBody.querySelectorAll('.sound-play-btn').forEach(btn => {
+                    btn.textContent = '재생';
+                    btn.classList.remove('playing');
+                });
+            }
+            
+            modal.classList.remove('show');
+        }
+
+        // 키워드 복사 (~키워드 형식)
+        function copyKeyword(keyword) {
+            const textToCopy = `~${keyword}`;
+            copyToClipboard(textToCopy);
+        }
+
+        // 클립보드에 복사
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast(`"${text}" 키워드가 복사되었습니다!`);
+                }).catch(err => {
+                    console.error('복사 실패:', err);
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        // 폴백 복사 방법
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showToast(`"${text}" 키워드가 복사되었습니다!`);
+            } catch (err) {
+                console.error('복사 실패:', err);
+                showToast('복사에 실패했습니다.');
+            }
+            document.body.removeChild(textArea);
+        }
+
+        // 토스트 메시지 표시
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            document.getElementById('totalCount').textContent = allItems.length;
+            document.getElementById('visibleCount').textContent = filteredItems.length;
+        }
+
+        // 초기화
+        function init() {
+            if (typeof dcConsData === 'undefined') {
+                document.getElementById('loading').textContent = '데이터를 불러올 수 없습니다.';
+                return;
+            }
+
+            allItems = dcConsData;
+            filteredItems = [...allItems];
+
+            createTagFilter();
+            renderItems();
+            updateStats();
+
+            document.getElementById('loading').style.display = 'none';
+
+            // 검색 박스 이벤트
+            const searchBox = document.getElementById('searchBox');
+            searchBox.addEventListener('input', (e) => {
+                searchQuery = e.target.value;
+                filterItems();
+            });
+
+            // 모달 닫기 이벤트
+            const modalClose = document.getElementById('modalClose');
+            const modal = document.getElementById('modal');
+            
+            modalClose.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+        }
+
+        // 페이지 로드 시 초기화
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
