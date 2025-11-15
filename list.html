@@ -558,6 +558,67 @@
             return path;
         }
 
+        // 확장자 대소문자 변환 시도 함수
+        function tryExtensionCaseVariations(img, originalSrc) {
+            // 확장자 추출 (URL 인코딩된 경로에서도 작동하도록 처리)
+            const lastDot = originalSrc.lastIndexOf('.');
+            if (lastDot === -1) return false; // 확장자가 없으면 시도하지 않음
+            
+            // URL 디코딩하여 확장자 추출
+            let decodedPath;
+            try {
+                decodedPath = decodeURIComponent(originalSrc);
+            } catch (e) {
+                decodedPath = originalSrc; // 디코딩 실패 시 원본 사용
+            }
+            
+            const decodedLastDot = decodedPath.lastIndexOf('.');
+            if (decodedLastDot === -1) return false;
+            
+            const basePath = decodedPath.substring(0, decodedLastDot);
+            const extension = decodedPath.substring(decodedLastDot + 1);
+            
+            // 원본 경로의 디렉토리 부분 유지 (인코딩된 부분)
+            const originalLastDot = originalSrc.lastIndexOf('.');
+            const originalBasePath = originalSrc.substring(0, originalLastDot);
+            
+            // 이미 시도한 변형인지 확인 (data-attribute로 추적)
+            const attempts = parseInt(img.dataset.attempts || '0');
+            
+            if (attempts === 0) {
+                // 첫 번째 시도: 확장자를 대문자로 변환
+                img.dataset.attempts = '1';
+                const upperExt = extension.toUpperCase();
+                // 파일명 부분만 다시 인코딩
+                const lastSlash = originalBasePath.lastIndexOf('/');
+                if (lastSlash !== -1) {
+                    const dir = originalBasePath.substring(0, lastSlash + 1);
+                    const filename = basePath.substring(basePath.lastIndexOf('/') + 1);
+                    img.src = dir + encodeURIComponent(filename) + '.' + upperExt;
+                } else {
+                    img.src = originalBasePath + '.' + upperExt;
+                }
+                return true;
+            } else if (attempts === 1) {
+                // 두 번째 시도: 확장자를 소문자로 변환
+                img.dataset.attempts = '2';
+                const lowerExt = extension.toLowerCase();
+                // 파일명 부분만 다시 인코딩
+                const lastSlash = originalBasePath.lastIndexOf('/');
+                if (lastSlash !== -1) {
+                    const dir = originalBasePath.substring(0, lastSlash + 1);
+                    const filename = basePath.substring(basePath.lastIndexOf('/') + 1);
+                    img.src = dir + encodeURIComponent(filename) + '.' + lowerExt;
+                } else {
+                    img.src = originalBasePath + '.' + lowerExt;
+                }
+                return true;
+            }
+            
+            // 더 이상 시도할 변형이 없음
+            return false;
+        }
+
         // 모든 태그 수집 및 개수 계산
         function collectAllTags() {
             const tagCounts = new Map();
@@ -653,9 +714,16 @@
                 img.src = imagePath;
                 img.alt = name;
                 img.loading = 'lazy';
+                img.dataset.originalSrc = imagePath; // 원본 경로 저장
                 
-                // 이미지 로드 실패 시 플레이스홀더로 변경 (재시도 없음)
+                // 이미지 로드 실패 시 확장자 대소문자 변환 시도
                 img.onerror = function() {
+                    const originalSrc = this.dataset.originalSrc || this.src;
+                    if (tryExtensionCaseVariations(this, originalSrc)) {
+                        // 확장자 변환 시도 중이므로 재시도
+                        return;
+                    }
+                    // 모든 시도 실패 시 플레이스홀더로 변경
                     this.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E';
                 };
                 
@@ -798,9 +866,18 @@
 
             modalBody.innerHTML = html;
 
-            // 모달 이미지 에러 처리 (재시도 없음)
+            // 모달 이미지 에러 처리 (확장자 대소문자 변환 시도)
             modalBody.querySelectorAll('.modal-image img').forEach(img => {
+                if (!img.dataset.originalSrc) {
+                    img.dataset.originalSrc = img.src; // 원본 경로 저장
+                }
                 img.onerror = function() {
+                    const originalSrc = this.dataset.originalSrc || this.src;
+                    if (tryExtensionCaseVariations(this, originalSrc)) {
+                        // 확장자 변환 시도 중이므로 재시도
+                        return;
+                    }
+                    // 모든 시도 실패 시 플레이스홀더로 변경
                     this.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E이미지 없음%3C/text%3E%3C/svg%3E';
                 };
             });
