@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <link rel="shortcut icon"></link>
+  <link href="https://fonts.googleapis.com/css?family=Ubuntu+Mono" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  <script src="https://cdn.socket.io/socket.io-2.0.3.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      overflow: hidden;
+      font-family: "Pretendard", "Malgun Gothic", sans-serif;
+    }
+
+    /* client의 기본 채팅 박스는 숨기고 박제 UI만 노출 */
+    #chat_wrapper {
+      display: none !important;
+    }
+
+    #pin-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    .pin-card {
+      --pin-image-size: 84px;
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.78);
+      border: 2px solid rgba(255, 255, 255, 0.26);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      animation: slideDown 240ms ease-out;
+    }
+
+    .pin-card.big {
+      --pin-image-size: 132px;
+    }
+
+    .pin-image {
+      width: var(--pin-image-size);
+      height: var(--pin-image-size);
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="background"></div>
+  <div id="chat_wrapper"></div>
+  <div id="pin-layer"></div>
+  <div id="toy-layer"></div>
+</body>
+
+<script type="text/javascript" charset="utf-8" src="lib/config.js"></script>
+<script type="text/javascript" charset="utf-8" src="lib/browserified.js"></script>
+<script type="text/javascript" charset="utf-8" src="lib/chzzkSessionURL.js"></script>
+<script type="text/javascript" charset="utf-8" src="lib/chzzkSocket.js"></script>
+<script type="text/javascript" charset="utf-8" src="lib/pin_overlay.js"></script>
+<script type="text/javascript" charset="utf-8" src="lib/pin_toy.js"></script>
+</html>
